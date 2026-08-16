@@ -22,24 +22,35 @@ Client plugin: no Host capabilities (no RPC / fs / network / spawn), no DOM mani
 ## Install
 
 ```sh
-dsh plugin --profile web add file:/path/to/sent-msg-locator   # static bundle
-dsh plugin --profile web update sent-msg-locator              # upgrade
+# Local path must not contain spaces — this repo lives under a spaced path, so it is
+# installed via a copy at ~/.dsh/plugins-dev/sent-msg-locator (already done on this machine).
+dsh plugin --profile web add file:C:/Users/whaow/.dsh/plugins-dev/sent-msg-locator
 ```
+
+The bundle is registered into `dsh.profile.bundles` of the web profile and loads
+automatically on DSH restart (no re-registration needed afterwards). To update,
+re-sync the `plugins-dev` copy and re-run the add command.
 
 For the dynamic fallback, follow the restore steps in `README.md` (Chinese) or the
 `manifest.json` notes.
 
 ## Features
 
-- Session-header entry button with a live count badge.
-- Full sent-message list: ordinal `#N`, time (HH:mm same day, dated otherwise), snippet.
-- Keyword / ordinal search with empty states.
-- Expand / collapse full text (images flagged as 含图片).
-- Refill composer with a message's content (append semantics).
+- Persistent floating icon rail on the left edge of the conversation area: one
+  numbered bubble per turn (user send → complete assistant reply).
+- Click an icon to smooth-scroll to the start of that turn (exact scroll to the
+  turn's first user message when resolvable).
+- Current-turn highlight follows scrolling; the rail auto-scrolls to keep the
+  highlighted icon visible.
+- Live updates as the conversation grows; compaction checkpoints show a divider
+  marker with "N items · ~M tokens" tooltip; compacted turns disappear.
 - Theme-aware via `--dsw-alias-*` CSS variables (light & dark safe).
 
 ## Version history
 
 | Version | Notes |
 | --- | --- |
+| v2.2.0 | Distribution switch: now a static bundle installed into the web profile (via `~/.dsh/plugins-dev/sent-msg-locator`); auto-loads across DSH restarts. Dynamic form kept as fallback. Same features as v2.1.12, security review ALLOW (0/300). |
+| v2.1.x | Icon bubbles resized to 80%; contrast-aware current-turn label; compaction divider marker; rail positioning/timing refinements. |
+| v2.0.0 | Redesigned as left-edge icon rail with click-to-locate and current-turn highlight; data from official `chat.timeline`; removed panel / search / refill. |
 | v1.0.0 | Initial: header entry + floating panel, search / expand / refill. Pure Client, security review ALLOW (0/300). |

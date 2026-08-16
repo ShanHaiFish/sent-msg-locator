@@ -44,14 +44,18 @@ DSH 插件：**定位当前会话中每一轮对话**（一轮 = 用户发送 �
 ### 静态 bundle（推荐）
 
 ```sh
-# 本地目录安装（路径不能含空格；也可先发布到 npm）
-dsh plugin --profile web add file:/path/to/sent-msg-locator
+# 本地目录安装（路径不能含空格；也可先发布到 npm）。
+# 本机已装：仓库先复制到 ~/.dsh/plugins-dev/sent-msg-locator（规避仓库路径含空格），
+# 再从该路径安装到 web profile，已写入 profile 的 dsh.profile.bundles 层栈。
+dsh plugin --profile web add file:C:/Users/whaow/.dsh/plugins-dev/sent-msg-locator
 
-# 升级
-dsh plugin --profile web update sent-msg-locator
+# 升级（重新复制 plugins-dev 副本后）
+dsh plugin --profile web add file:C:/Users/whaow/.dsh/plugins-dev/sent-msg-locator
 ```
 
-安装后重启 DSH，打开任意会话，在对话区左缘即可看到图标列并使用。
+安装后**重启 DSH**（web profile 的 Loader 在启动时扫描 `dsh.client` 声明并挂载
+bundle 层），打开任意会话，在对话区左缘即可看到图标列并使用；之后每次重启
+DSH 都自动加载，无需重新注册。
 
 ### 动态插件（回退形态）
 
@@ -105,6 +109,7 @@ DSH 重启后，仓库里的源码文件只是存档，必须重新注册进当�
 
 | 版本 | 日期 | 说明 |
 | --- | --- | --- |
+| v2.2.0 | 2026-xx-xx | 安装形态切换：由动态插件正式切换为静态 bundle，已安装到 web profile（`~/.dsh/profiles/web`，经 `~/.dsh/plugins-dev/sent-msg-locator` 副本 `file:` 安装，加入 `dsh.profile.bundles` 层栈），随 profile 自动加载、跨 DSH 进程存续；动态形态（`manifest.json` + `client-source.js`）保留为回退；功能与 v2.1.12 完全一致，安全审查 ALLOW（0/300） |
 | v2.1.12 | 2026-xx-xx | 新增：压缩点视觉分隔标记——DSH 自动压缩对话（compaction，阈值默认上下文 80%）后旧轮次自动从图标列消失，图标列顶部显示压缩小图标 + 虚线分隔（检测 `chat.nodes` 中 `kind === 'compaction'` 检查点节点），悬停提示「已压缩 N 条历史记录 · 约 M tokens」 |
 | v2.1.11 | 2026-xx-xx | 优化：图标气泡尺寸缩小至原 80%（22→17.6px、字号 10.5→8.4px、圆角等比、顶部小图标 11→8.8px）；当前轮图标数字颜色改为按品牌色亮度自动取黑/白文字（`contrast-color()`，不支持时退回 `#fff`），修复浅色品牌主题下白色数字看不清的问题 |
 | v2.1.10 | 2026-xx-xx | 调整：图标列与对话区左缘（侧边栏右缘）的间距由 5px 收窄为 2px |

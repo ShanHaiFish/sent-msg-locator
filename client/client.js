@@ -1,5 +1,5 @@
 // ============================================================
-// 已发送消息定位 (sent-msg-locator) — v2.0.0 (DSH 静态 bundle 插件 · Client 半区)
+// 已发送消息定位 (sent-msg-locator) — v2.2.0 (DSH 静态 bundle 插件 · Client 半区)
 // 静态形态: 经 window.__ModuleLoader__.load 注册, 随 profile 层栈自动加载,
 // 无需每次重启 DSH 后重新 cordis_define/run。
 //

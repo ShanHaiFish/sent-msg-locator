@@ -1,14 +1,15 @@
-# AGENTS.md — sent-msg-locator 已发送消息定位(DSH 动态 Cordis 插件)
+# AGENTS.md — sent-msg-locator 已发送消息定位(DSH 静态 bundle 插件 · 动态形态为回退)
 
 给 AI 代理与本仓库协作者的运行手册。开始任何修改前请先读本文档。
 
 ## 项目是什么
 
-`smsg` 是一个 DSH 纯 Client 插件:在会话标题栏提供「消息定位」入口,点击弹出右侧
-浮动面板,列出当前会话中每次通过输入框发送的消息(序号/时间/摘要),支持搜索、
-展开全文、一键回填输入框重新使用。数据来自会话快照的 `user` 节点,实时更新。
+`smsg` 是一个 DSH 纯 Client 插件:在**对话区左缘**提供常驻浮动图标列,每一轮
+对话(用户发送 → 助手完整回复)一个气泡序号图标,点击平滑滚动定位到该轮开头,
+当前浏览轮高亮联动并自动跟随,随对话实时更新;数据来自会话快照的官方
+`chat.timeline`(`turnOrder` + `turns`)与 `chat.nodes` 合并推导。
 
-当前版本:`v1.0.0`(见 `manifest.json` 的 `version` 字段与 `README.md` 版本历史)。
+当前版本:`v2.2.0`(见 `manifest.json` 的 `version` 字段与 `README.md` 版本历史)。
 
 ## 文件结构与职责
 
@@ -18,7 +19,7 @@
 | `manifest.json` | 插件元数据 + 恢复定义参数 + 版本号 | 版本号每次功能变更必须递增 |
 | `lib/index.js` | 静态 bundle 形态的 Host 半区(最小空实现) | 本插件无 Host 能力;若新增 Host RPC 需同步加 webServer 路由 |
 | `client/client.js` | 静态 bundle 形态的 Client 半区 | 与 `client-source.js` 逻辑一致(差异见文件头注释),改功能时两处必须同步 |
-| `package.json` + `cordis.patch.yml` | 静态 bundle 安装配置 | bundle 形态是推荐形态 |
+| `package.json` + `cordis.patch.yml` | 静态 bundle 安装配置 | bundle 形态是主形态,已安装到 web profile;仓库改功能后需同步 `~/.dsh/plugins-dev/sent-msg-locator` 副本并重装 |
 | `README.md` | 用户文档 + 恢复步骤 + 版本历史 | 版本历史表随每次发布追加 |
 | `AGENTS.md` | 本文件,代理协作约定 | 约定变更时同步更新 |
 
@@ -26,10 +27,16 @@
 > 后续若引入 Host 能力,需同时补 `host-source.js` 并更新 `manifest.json` 的
 > `code.host` 与 `purpose` 的 `CAPABILITIES:` 声明。
 
-## 最重要的工作流:重建插件(DSH 重启后必做)
+## 最重要的工作流:确认静态 bundle 已生效(DSH 重启后无需任何操作)
 
-动态 Cordis 插件**不跨 DSH 进程存续**。DSH 重启后,仓库里的源码文件只是存档,
-必须重新注册进当前进程:
+静态 bundle(v2.2.0 起)已安装到 web profile,随 profile 层栈**自动加载、跨
+DSH 进程存续**——DSH 重启后插件自动生效,不需要重新注册。若改动过仓库代码,
+只需把改动同步到 `~/.dsh/plugins-dev/sent-msg-locator` 副本(或重装),再重启
+DSH 即可。
+
+### 回退形态(动态插件)重建 —— 仅当静态 bundle 不可用时
+
+动态 Cordis 插件**不跨 DSH 进程存续**。若走动态形态,DSH 重启后必须重新注册:
 
 1. 读取本目录 `client-source.js` 的完整内容;
 2. 调用 `cordis_define`:
@@ -41,6 +48,9 @@
 3. 调用 `cordis_run` 激活返回的 `pluginId`/`packageId`(首次需要用户批准)。
 
 一句话提示词:「按 `sent-msg-locator` 目录重建已发送消息定位插件」。
+
+> 注意:静态 bundle 与动态形态**不要同时激活**,否则同一批插槽会被注册两次,
+> 图标列重复渲染。
 
 ## 修改工作流(改功能时)
 
@@ -91,5 +101,8 @@
 
 - 查看状态:`git status` / `git log --oneline`
 - 提交:`git add <files>` + `git commit -m "<type>: <中文描述>"`
-- 安装静态形态:`dsh plugin --profile web add file:<本目录绝对路径>`
-- 重建插件:见上文「最重要的工作流」
+- 同步已安装副本(仓库改代码后):`robocopy <仓库目录> %USERPROFILE%\.dsh\plugins-dev\sent-msg-locator /E /XD .git /XF "演示动画.gif"`(或直接复制改动文件)
+- 安装/重装静态形态(仓库路径含空格,必须先经 plugins-dev 副本):
+  `dsh plugin --profile web add file:C:/Users/whaow/.dsh/plugins-dev/sent-msg-locator`
+- 验证:`dsh plugin --profile web list` / `dsh --profile web --dump-config`(看 `# == sent-msg-locator` 层)
+- 重建回退形态:见上文「回退形态(动态插件)重建」
