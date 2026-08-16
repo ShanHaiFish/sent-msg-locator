@@ -349,9 +349,16 @@ window.__ModuleLoader__.load({
           // 实测对话区左缘坐标(元素级 rect, 不触碰 document/window 全局)。
           // 侧边栏可折叠/拖拽改变宽度, 用 timer 轮询持续校准, 保证图标列
           // 始终贴在侧边栏右缘(对话区左缘)右侧。
+          // 基准必须是聊天滚动容器 [data-conversation-scroll](scrollBody):
+          // 空白会话 hero 阶段(点击工作区开始新会话、发送第一条消息前后)
+          // composer 输入区是居中受限宽度(约 812px)的, dock 行左缘会随
+          // 输入框居中而远离侧边栏(图标列会悬浮到输入框上); 滚动容器横跨
+          // 整个会话列, 其左缘在 hero/active/settling 各阶段都等于对话区左缘。
           const measure = () => {
             if (ref.current) {
-              const rect = ref.current.getBoundingClientRect()
+              const scroller = ref.current.closest('[data-conversation-scroll]')
+              const el = scroller || ref.current
+              const rect = el.getBoundingClientRect()
               if (Math.abs(rect.left - state.left) > 0.5) setState({ left: rect.left })
             }
           }
