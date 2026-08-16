@@ -9,7 +9,7 @@
 当前浏览轮高亮联动并自动跟随,随对话实时更新;数据来自会话快照的官方
 `chat.timeline`(`turnOrder` + `turns`)与 `chat.nodes` 合并推导。
 
-当前版本:`v2.2.0`(见 `manifest.json` 的 `version` 字段与 `README.md` 版本历史)。
+当前版本:`v2.3.3`(见 `manifest.json` 的 `version` 字段与 `README.md` 版本历史)。
 
 ## 文件结构与职责
 
