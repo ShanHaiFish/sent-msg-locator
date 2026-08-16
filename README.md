@@ -1,5 +1,11 @@
 # 已发送消息定位 (sent-msg-locator)
 
+[English](README.en.md) · [中文](README.md)
+
+![GitHub Release](https://img.shields.io/github/v/release/ShanHaiFish/sent-msg-locator)
+![License](https://img.shields.io/github/license/ShanHaiFish/sent-msg-locator)
+![GitHub Stars](https://img.shields.io/github/stars/ShanHaiFish/sent-msg-locator)
+
 DSH 插件：**定位当前会话中每一轮对话**（一轮 = 用户发送 → 助手完整回复）。
 
 在**对话区左缘**有一条常驻的浮动图标列：每一轮对话一个**气泡序号图标**，
