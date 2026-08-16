@@ -1,5 +1,5 @@
 // ============================================================
-// 已发送消息定位 (sent-msg-locator) — v2.3.3 (DSH 动态 Cordis 插件 · 回退形态)
+// 已发送消息定位 (sent-msg-locator) — v2.3.4 (DSH 动态 Cordis 插件 · 回退形态)
 // 本文件是 cordis_define 的 code.client 参数原文(函数体)。
 //
 // 功能: 定位当前会话中每一轮对话(用户发送 → 助手完整回复)。
@@ -406,11 +406,52 @@ return {
           // kind === 'steering' 而非 'user'(v2.3.2 修复: 首轮图标无文本)
           const userKeyByTurn = new Map()
           if (nodes && typeof nodes.get === 'function') {
+            // 用户输入候选不限于 user/steering(v2.3.4): 新工作区 goal
+            // 流程中, 用户输入可能被引擎渲染为
+            //   1) command 节点 —— 斜杠命令(如 /goal /compact), 数据为
+            //      { name, args }, 界面渲染为命令行, 是用户的字面输入;
+            //   2) context 节点且 source.kind === 'goal' —— goal 轮次消息
+            //      (引擎代用户发送的目标文本, 经 agent/inbox 认领后按
+            //      source.kind !== 'user' 分类为 context, 界面渲染为
+            //      context 行), 同样是该轮的用户输入;
+            //   其余 context 注入(AGENTS.md / 运行时上下文 / 技能目录等)
+            //   仍排除, 不冒充用户输入。
+            // 命令发生在 turn/start 之前时(如会话首条即 /goal), 其事件
+            // 没有轮次归属, 节点 location 为 session 级, 无法直接归属
+            // 轮次: 记为 pendingCommand, 归属其后出现的第一轮(flowOrder
+            // 按 seq 排序, 命令行渲染在该轮内容之前)。
+            let pendingCommand = null // { key, text }
             for (const key of flowOrder) {
               const node = nodes.get(key)
-              if (!node || (node.kind !== 'user' && node.kind !== 'steering')) continue
+              if (!node) continue
               const turnNo = turnOfNode(node)
-              if (turnNo === null || userKeyByTurn.has(turnNo)) continue
+              if (node.kind === 'command') {
+                const d = node.data || {}
+                const text = (d.name ? '/' + d.name : '') +
+                  (typeof d.args === 'string' && d.args ? ' ' + d.args : '')
+                if (!text) continue
+                if (turnNo !== null) {
+                  if (!userKeyByTurn.has(turnNo)) {
+                    userKeyByTurn.set(turnNo, key)
+                    userTextByTurn.set(turnNo, text.length > 400 ? [...text].slice(0, 400).join('') + '…' : text)
+                  }
+                } else {
+                  pendingCommand = pendingCommand || { key: key, text: text }
+                }
+                continue
+              }
+              const isInput = node.kind === 'user' || node.kind === 'steering' ||
+                (node.kind === 'context' && node.data && node.data.source &&
+                  node.data.source.kind === 'goal')
+              if (!isInput || turnNo === null) continue
+              // 待归属命令先于本节点出现: 该轮尚无用户输入时, 命令文本
+              // 优先(它是用户字面输入, goal 上下文只是其展开)。
+              if (pendingCommand && !userKeyByTurn.has(turnNo)) {
+                userKeyByTurn.set(turnNo, pendingCommand.key)
+                userTextByTurn.set(turnNo, pendingCommand.text)
+                pendingCommand = null
+              }
+              if (userKeyByTurn.has(turnNo)) continue
               userKeyByTurn.set(turnNo, key)
               userTextByTurn.set(turnNo, extractUserText(node))
             }

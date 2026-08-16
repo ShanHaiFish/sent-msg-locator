@@ -102,10 +102,15 @@ DSH 重启后，仓库里的源码文件只是存档，必须重新注册进当�
   `getBoundingClientRect`）作为图标列 fixed 定位基准；侧边栏可折叠/拖拽
   改变宽度，桥内用 **timer 轮询（300ms）**持续校准，图标列始终贴在
   侧边栏右缘（对话区左缘）右侧；切换会话时清空旧数据。
-  桥还会遍历 `chat.order`，为每个 turn 记录**第一条 `kind === 'user'` /
-  `'steering'` 节点的 key 与文本**（用于精确跳转定位与悬停提示；会话首条消息
-  及进行中轮次的转向消息经 `agent/inbox/spliced`(next-step) 被引擎渲染为
-  `steering` 节点，与 `user` 同属用户输入）。
+  桥还会遍历 `chat.order`，为每个 turn 记录**第一条用户输入节点的 key 与
+  文本**（用于精确跳转定位与悬停提示）：用户输入节点包括 `kind === 'user'` /
+  `'steering'`（会话首条消息及进行中轮次的转向消息经 `agent/inbox/spliced`
+  (next-step) 被引擎渲染为 steering 节点，与 user 同属用户输入）、
+  `kind === 'command'`（斜杠命令如 `/goal` `/compact`，文本为 `/name args`，
+  发生在 turn/start 之前的会话级命令归属其后第一轮）以及
+  `source.kind === 'goal'` 的 `context` 节点（goal 轮次消息，引擎代用户发送
+  的目标文本）；其余 context 注入消息（AGENTS.md / 运行时上下文 / 技能目录
+  等）仍排除。
 - 轮尾锚点：`conversation.chat.assistant-actions` 槽（additive 列表槽）在每个
   已完成助手消息处渲染 0 尺寸锚点元素，通过 `messageId` 反查快照节点
   `data.turn` 得到轮次；首个锚点建立滚动容器（`closest('[data-conversation-scroll]')`）
@@ -118,9 +123,11 @@ DSH 重启后，仓库里的源码文件只是存档，必须重新注册进当�
 - 当前轮检测：滚动容器上监听 `scroll`，取**视口顶部之下第一个锚点**所属轮
   （锚点按轮次从上到下排列）；图标列内部用 `scrollIntoView({ block: 'nearest' })`
   自动跟随高亮。
-- 悬停提示卡：数据来自该轮**第一条 `kind === 'user'` / `'steering'` 节点**
-  `data.content` 的 text 块（`ContentBlock[]`，只拼接 `{ type: 'text' }`，纯图片消息显示
-  「[图片]」占位）。自定义 fixed 定位圆角卡片（原生 `title` 无法限制尺寸/加
+- 悬停提示卡：数据来自该轮**第一条用户输入节点**——`kind === 'user'` /
+  `'steering'` 节点（`data.content` 的 text 块，`ContentBlock[]`，只拼接
+  `{ type: 'text' }`，纯图片消息显示「[图片]」占位）、`kind === 'command'`
+  节点（`/name args`）或 `source.kind === 'goal'` 的 `context` 节点。自定义
+  fixed 定位圆角卡片（原生 `title` 无法限制尺寸/加
   圆角，故弃用；`aria-label` 保留摘要）：卡片 ≤280px 宽、文本最多 6 行
   （`-webkit-line-clamp` + `max-height` 兜底，JS 侧另有 400 码点安全上限）；
   以聊天滚动容器 `getBoundingClientRect` 为界防止右缘/上下溢出，显示期间
@@ -143,6 +150,7 @@ DSH 重启后，仓库里的源码文件只是存档，必须重新注册进当�
 
 | 版本 | 日期 | 说明 |
 | --- | --- | --- |
+| v2.3.4 | 2026-08-16 | 修复：新工作区 goal 流程会话悬停无用户输入文本——用户输入经引擎渲染为 `command` 节点（斜杠命令，如 `/goal` `/compact`，界面渲染为命令行）与 `context` 节点（`source.kind === 'goal'` 的 goal 轮次消息，引擎代用户发送的目标文本，经 agent/inbox 认领后按 `source.kind !== 'user'` 分类为 context），原只认 `user`/`steering` 的过滤导致悬停显示误导性占位「该轮用户消息尚未加载」；修复为用户输入候选同时接受 `command`（文本为 `/name args`）与 `source.kind === 'goal'` 的 context（其余 context 注入仍排除）；发生在 `turn/start` 之前的会话级命令（如会话首条即 `/goal`）节点 location 为 session 级，记为 pendingCommand 归属其后出现的第一轮；纯 Client 双形态同步，安全审查 ALLOW（0/300） |
 | v2.3.3 | 2026-08-16 | 修复：分页会话中最旧可见轮（图标列第一个图标，序号不一定是 1）悬停无用户文本——引擎按 50 条消息分页（切点永不拆消息但会切在轮次中间），最旧可见轮常只有轮尾，其用户消息在已加载窗口外、快照中无该轮 user/steering 节点，文本无法从客户端取得；修复为提示卡显示斜体占位「该轮用户消息尚未加载，点击聊天区「加载更早」后显示」（`label-tertiary` 主题色），加载更早历史后文本自动出现；纯 Client 双形态同步，安全审查 ALLOW（0/300） |
 | v2.3.2 | 2026-08-16 | 修复：首轮图标悬停无用户文本——会话首条消息（及进行中轮次的转向消息）经 `agent/inbox/spliced`(target: next-step) 被引擎认领，渲染为 `kind === 'steering'` 而非 `'user'`（同一渲染器、同一锚点机制，界面看不出差异），原 `node.kind !== 'user'` 过滤导致第 1 轮取不到文本与精确跳转键；修复为同时接受 `'user'` 与 `'steering'`（context 注入消息仍排除）；纯 Client 双形态同步，安全审查 ALLOW（0/300） |
 | v2.3.1 | 2026-08-16 | 修复：v2.3.0 事故——数据桥在空白会话/快照加载中崩溃导致图标列整体消失。根因：`userTextByTurn` 声明在 `if (order.length)` 块内、却在块外 `setState` 引用，order 为空时 `ReferenceError`，被插槽系统一次渲染错误永久弃权（abdicated），桥不再渲染、`left` 恒为 0、图标列不显示；修复为外层声明 + 推导整体 `try/catch` 防线（异常时跳过本次推导并 `console.warn`，绝不再让桥崩溃弃权）；纯 Client 双形态同步，安全审查 ALLOW（0/300） |

@@ -9,7 +9,7 @@
 当前浏览轮高亮联动并自动跟随,随对话实时更新;数据来自会话快照的官方
 `chat.timeline`(`turnOrder` + `turns`)与 `chat.nodes` 合并推导。
 
-当前版本:`v2.3.3`(见 `manifest.json` 的 `version` 字段与 `README.md` 版本历史)。
+当前版本:`v2.3.4`(见 `manifest.json` 的 `version` 字段与 `README.md` 版本历史)。
 
 ## 文件结构与职责
 
@@ -74,10 +74,14 @@ DSH 即可。
   `conversation.input.dock`、`shell.overlay`),绝不替换内置 UI;纯 JS +
   `React.createElement`,禁 JSX/TS/import;不操作 `document`/`window`,不使用
   `setTimeout` 等全局(需定时器时走 `timer` 服务)。
-- **数据来源**:会话快照 `useSession` → `snapshot.nodes` 过滤 `kind === 'user'` /
-  `'steering'`(首条消息及转向消息经 next-step 收件箱被渲染为 steering,同属用户
-  输入;context 注入消息排除),兜底 `chat.order` + `chat.nodes.get`;只提取需要
-  的叶子字段(seq/time/text/hasImage),不序列化快照对象本身。
+- **数据来源**:会话快照 `useSession` → `snapshot.nodes` 过滤用户输入节点——
+  `kind === 'user'` / `'steering'`(首条消息及转向消息经 next-step 收件箱被渲染
+  为 steering,同属用户输入)、`kind === 'command'`(斜杠命令如 `/goal` `/compact`,
+  文本为 `/name args`;发生在 turn/start 之前的会话级命令归属其后第一轮)、
+  `source.kind === 'goal'` 的 `context` 节点(goal 轮次消息,引擎代用户发送的
+  目标文本);其余 context 注入消息(AGENTS.md / 运行时上下文 / 技能目录等)排除;
+  兜底 `chat.order` + `chat.nodes.get`;只提取需要的叶子字段(seq/time/text/
+  hasImage),不序列化快照对象本身。
 - **会话作用域数据传递**:根作用域面板(overlay)拿不到 `useSession`,
   由 `conversation.input.dock` 隐藏桥(渲染 null)捕获并写入模块级状态;
   切换会话时必须清空旧数据。
