@@ -1,0 +1,45 @@
+{
+  "name": "sent-msg-locator",
+  "description": "DSH 静态 bundle 插件：定位当前会话中每次通过输入框发送的消息。会话标题栏「消息定位」按钮 → 右侧浮动面板列出全部已发送消息（序号/时间/摘要），支持关键词搜索、点击展开全文、一键回填输入框重新使用。A static-bundle DSH plugin that locates every message you sent from the composer.",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": "./client/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "client",
+    "cordis.patch.yml",
+    "LICENSE",
+    "README.md",
+    "client-source.js",
+    "manifest.json"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "deepseek",
+    "harness",
+    "dsh",
+    "dsh-plugin",
+    "sent-messages",
+    "locator",
+    "composer"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  }
+}

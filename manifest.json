@@ -1,0 +1,26 @@
+{
+  "schema": "dsh-dynamic-cordis-plugin",
+  "version": "1.0.0",
+  "plugin": {
+    "kind": "new",
+    "idPrefix": "smsg"
+  },
+  "name": "已发送消息定位",
+  "purpose": "定位当前会话中每次通过输入框发送的消息：会话标题栏「消息定位」按钮弹出右侧浮动面板，列出全部已发送消息（序号 #N / 时间 / 摘要），支持关键词搜索、点击展开全文、一键把内容回填到输入框重新使用；数据来自会话快照的 user 节点（seq/time/content），随发送实时更新；纯 Client 实现，无 Host 能力。",
+  "code": {
+    "host": null,
+    "client": "./client-source.js"
+  },
+  "slots": [
+    { "name": "conversation.session.header.actions", "id": "smsg-header-toggle", "order": 40, "description": "会话标题栏「消息定位」按钮（带已发送条数角标）" },
+    { "name": "conversation.input.dock", "id": "smsg-session-bridge", "order": 0, "description": "隐藏输入桥（渲染 null）：捕获标准包 useSession/inputActions/useInput，供面板使用" },
+    { "name": "shell.overlay", "id": "smsg-panel", "order": 20, "description": "右侧 360px「已发送消息」定位面板" }
+  ],
+  "rpc": [],
+  "notes": [
+    "client 源码在 client-source.js，为 cordis_define 的 code.client 函数体原文；code.host 为 null（纯 Client 插件，无 Host RPC/能力）。",
+    "恢复/重建时：用 cordis_define 以本文件的 plugin/name/purpose 与 client-source.js 内容重新定义（kind:new + idPrefix:smsg，code.client 为文件内容，code.host 为 null），再用 cordis_run 运行（首次需批准）。",
+    "动态插件不跨 DSH 进程存续；重启 DSH 后需按 README.md 重新加载。",
+    "v1.0.0 首发：标题栏入口 + 右侧浮动面板 + 搜索/展开全文/回填输入框；纯 Client，安全审查 ALLOW（0/300，无 spawn/network/fs）。"
+  ]
+}
