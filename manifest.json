@@ -1,6 +1,6 @@
 {
   "schema": "dsh-dynamic-cordis-plugin",
-  "version": "2.1.9",
+  "version": "2.1.10",
   "plugin": {
     "kind": "new",
     "idPrefix": "smsg"
@@ -21,6 +21,7 @@
     "client 源码在 client-source.js，为 cordis_define 的 code.client 函数体原文；code.host 为 null（纯 Client 插件，无 Host RPC/能力）。",
     "恢复/重建时：用 cordis_define 以本文件的 plugin/name/purpose 与 client-source.js 内容重新定义（kind:new + idPrefix:smsg，code.client 为文件内容，code.host 为 null），再用 cordis_run 运行（首次需批准）。",
     "动态插件不跨 DSH 进程存续；重启 DSH 后需按 README.md 重新加载。",
+    "v2.1.10 调整：图标列与对话区左缘（侧边栏右缘）的间距由 5px 收窄为 2px。",
     "v2.1.9 调整：图标列与对话区左缘（侧边栏右缘）的间距由 7px 收窄为 5px。",
     "v2.1.8 调整：图标列与对话区左缘（侧边栏右缘）的间距由 14px 收窄为 7px。",
     "v2.1.7 优化：图标列竖条本体全透明——移除背景/边框/阴影/圆角，只保留气泡图标视觉；调整窗口宽度使图标列与对话文字重叠时，文字不再被竖条遮挡。",
