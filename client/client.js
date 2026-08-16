@@ -466,7 +466,7 @@ window.__ModuleLoader__.load({
         return React.createElement('div', {
           ref: railRef,
           className: 'sml-rail',
-          style: { left: left + 14, top: 96, bottom: 130 },
+          style: { left: left + 7, top: 96, bottom: 130 },
         },
           React.createElement('div', { className: 'sml-rail-hint' },
             React.createElement(IconChat, { size: 11 })),
