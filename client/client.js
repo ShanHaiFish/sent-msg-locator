@@ -89,6 +89,13 @@ window.__ModuleLoader__.load({
           color: var(--dsw-alias-label-secondary, #9aa4b2);
           padding: 4px 2px; user-select: none;
         }
+        .sml-rail-compact {
+          display: flex; align-items: center; justify-content: center;
+          gap: 3px; margin: 0 3px 3px; padding: 0 0 5px;
+          border-bottom: 1px dashed var(--dsw-alias-border-l2, rgba(120,130,145,.45));
+          color: var(--dsw-alias-label-secondary, #9aa4b2);
+          user-select: none; cursor: default;
+        }
       `)
 
       // --- 模块级轻量状态(useStore 模式, 与 fexp 一致) ---
@@ -101,6 +108,7 @@ window.__ModuleLoader__.load({
         anchors: new Map(), // turn -> 轮尾锚点元素
         scrollEl: null,     // 聊天滚动容器(首个锚点建立监听)
         currentTurn: null,  // 当前浏览轮
+        compaction: null,   // 压缩标记: { items, tokens } | null
       }
 
       function setState(patch) {
@@ -221,6 +229,14 @@ window.__ModuleLoader__.load({
         return d.getFullYear() + '-' + md + ' ' + hm
       }
 
+      // --- 压缩计数格式化(悬停提示) ---
+      function fmtTokens(n) {
+        if (typeof n !== 'number' || !isFinite(n)) return ''
+        if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M'
+        if (n >= 1000) return (n / 1000).toFixed(1) + 'K'
+        return String(n)
+      }
+
       // --- 图标(Google Material Icons, Apache 2.0) ---
       function svgIcon(size, children) {
         return React.createElement('svg', {
@@ -233,6 +249,11 @@ window.__ModuleLoader__.load({
         // material chat: 会话气泡, 作为图标列顶部小图标。
         return svgIcon(props && props.size,
           React.createElement('path', { d: 'M4 4h16v12H5.17L4 17.17V4m0-2c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2H4zm2 10h8v2H6v-2zm0-3h12v2H6V9zm0-3h12v2H6V6z' }))
+      }
+      function IconCompress(props) {
+        // material compress: 上下箭头对拢 + 中横线, 作为压缩分隔标记小图标。
+        return svgIcon(props && props.size,
+          React.createElement('path', { d: 'M8 19h3v3h2v-3h3l-4-4-4 4zm8-14h-3V2h-2v3H8l4 4 4-4zM4 9v2h16V9H4z' }))
       }
 
       // --- 隐藏数据桥: 捕获 timeline 与对话区左缘坐标 ---
@@ -254,6 +275,7 @@ window.__ModuleLoader__.load({
               anchors: new Map(),
               scrollEl: null,
               currentTurn: null,
+              compaction: null,
             })
           }
           // 提取轮次: 官方 timeline(turnOrder + turns)为主, 聊天节点快照兜底。
@@ -343,7 +365,24 @@ window.__ModuleLoader__.load({
               if (userKey) turnUserKeys.set(turnNo, userKey)
             }
           }
-          setState({ turns: turns, turnUserKeys: turnUserKeys })
+          // 压缩标记: 官方 compaction 检查点节点(kind === 'compaction',
+        // 由视图层把替换摘要的 user/message 渲染成标记行)。被压缩的旧轮次
+        // 已从表层移除(timeline 与 nodes 均不含), 图标自动消失; 此处仅
+        // 提取计数叶子字段, 供图标列顶部渲染压缩分隔标记。
+        let compaction = null
+        if (nodes && typeof nodes.get === 'function') {
+          for (const key of flowOrder) {
+            const node = nodes.get(key)
+            if (!node || node.kind !== 'compaction') continue
+            const d = node.data || {}
+            compaction = {
+              items: typeof d.shadowedItemCount === 'number' ? d.shadowedItemCount : null,
+              tokens: typeof d.shadowedTokenCount === 'number' ? d.shadowedTokenCount : null,
+            }
+            break
+          }
+        }
+        setState({ turns: turns, turnUserKeys: turnUserKeys, compaction: compaction })
         }, [snapshot, sessionId])
 
         React.useEffect(() => {
@@ -432,6 +471,7 @@ window.__ModuleLoader__.load({
         const scrollEl = useStore((s) => s.scrollEl)
         const turnUserKeys = useStore((s) => s.turnUserKeys)
         const currentTurn = useStore((s) => s.currentTurn)
+        const compaction = useStore((s) => s.compaction)
         const railRef = React.useRef(null)
 
         // 当前轮变化时, 图标列自动滚动使高亮图标可见
@@ -466,6 +506,12 @@ window.__ModuleLoader__.load({
           }, String(t.turn))
         })
 
+        const compactTitle = compaction
+          ? '已压缩历史对话' +
+            (compaction.items !== null ? '：' + compaction.items + ' 条历史记录' : '') +
+            (compaction.tokens !== null ? '，约 ' + fmtTokens(compaction.tokens) + ' tokens' : '')
+          : ''
+
         return React.createElement('div', {
           ref: railRef,
           className: 'sml-rail',
@@ -473,6 +519,11 @@ window.__ModuleLoader__.load({
         },
           React.createElement('div', { className: 'sml-rail-hint' },
             React.createElement(IconChat, { size: 8.8 })),
+          compaction ? React.createElement('div', {
+            className: 'sml-rail-compact',
+            title: compactTitle,
+            'aria-label': compactTitle,
+          }, React.createElement(IconCompress, { size: 8.8 })) : null,
           turns.length ? items : React.createElement('div', { className: 'sml-rail-empty' }, '暂无'),
         )
       }
