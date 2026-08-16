@@ -1,6 +1,6 @@
 {
   "schema": "dsh-dynamic-cordis-plugin",
-  "version": "2.1.10",
+  "version": "2.1.11",
   "plugin": {
     "kind": "new",
     "idPrefix": "smsg"
@@ -21,6 +21,7 @@
     "client 源码在 client-source.js，为 cordis_define 的 code.client 函数体原文；code.host 为 null（纯 Client 插件，无 Host RPC/能力）。",
     "恢复/重建时：用 cordis_define 以本文件的 plugin/name/purpose 与 client-source.js 内容重新定义（kind:new + idPrefix:smsg，code.client 为文件内容，code.host 为 null），再用 cordis_run 运行（首次需批准）。",
     "动态插件不跨 DSH 进程存续；重启 DSH 后需按 README.md 重新加载。",
+    "v2.1.11 优化：图标气泡尺寸缩小至原 80%（22→17.6px、字号 10.5→8.4px、圆角等比、顶部小图标 11→8.8px）；当前轮图标数字颜色改为按品牌色亮度自动取黑/白文字（contrast-color，不支持时退回 #fff），修复浅色品牌主题下白色数字看不清的问题。",
     "v2.1.10 调整：图标列与对话区左缘（侧边栏右缘）的间距由 5px 收窄为 2px。",
     "v2.1.9 调整：图标列与对话区左缘（侧边栏右缘）的间距由 7px 收窄为 5px。",
     "v2.1.8 调整：图标列与对话区左缘（侧边栏右缘）的间距由 14px 收窄为 7px。",

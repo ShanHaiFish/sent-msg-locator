@@ -59,12 +59,12 @@ window.__ModuleLoader__.load({
         }
         .sml-rail-item {
           display: flex; align-items: center; justify-content: center;
-          width: 22px; height: 22px; margin: 0 auto; padding: 0;
+          width: 17.6px; height: 17.6px; margin: 0 auto; padding: 0;
           border: 1px solid var(--dsw-alias-border-l2, rgba(120,130,145,.45));
-          border-radius: 8px 8px 8px 2px; /* 气泡形: 左下小圆角模拟气泡尾巴 */
+          border-radius: 6.4px 6.4px 6.4px 1.6px; /* 气泡形: 左下小圆角模拟气泡尾巴 */
           background: var(--dsw-alias-bg-layer-2, rgba(148,163,184,.16));
           color: var(--dsw-alias-label-secondary, #9aa4b2);
-          font-size: 10.5px; font-weight: 600; line-height: 1;
+          font-size: 8.4px; font-weight: 600; line-height: 1;
           cursor: pointer; box-sizing: border-box;
           transition: background .15s ease, border-color .15s ease, color .15s ease;
         }
@@ -75,7 +75,10 @@ window.__ModuleLoader__.load({
         .sml-rail-item-current {
           background: var(--dsw-alias-brand-primary, #4c8dff);
           border-color: var(--dsw-alias-brand-primary, #4c8dff);
+          /* 数字可读性: 按品牌色亮度自动取黑/白文字(contrast-color),
+             避免浅色品牌主题下白色数字看不清; 不支持时退回 #fff */
           color: #fff;
+          color: contrast-color(var(--dsw-alias-brand-primary, #4c8dff));
         }
         .sml-rail-item-open {
           border-style: dashed;
@@ -469,7 +472,7 @@ window.__ModuleLoader__.load({
           style: { left: left + 2, top: 96, bottom: 130 },
         },
           React.createElement('div', { className: 'sml-rail-hint' },
-            React.createElement(IconChat, { size: 11 })),
+            React.createElement(IconChat, { size: 8.8 })),
           turns.length ? items : React.createElement('div', { className: 'sml-rail-empty' }, '暂无'),
         )
       }
