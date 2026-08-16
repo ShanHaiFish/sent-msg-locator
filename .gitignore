@@ -2,3 +2,6 @@ node_modules/
 dist/
 *.log
 .DS_Store
+
+# 大体积演示动画, 不进仓库(94MB), 发布用轻量截图替代
+演示动画.gif
