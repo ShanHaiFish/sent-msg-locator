@@ -29,6 +29,12 @@ Data comes from the official `chat.timeline` (`turnOrder` + `turns`) merged with
 
 > Pure Client plugin: no Host capabilities (no RPC / fs / network / spawn). Scrolling uses only element-level APIs (`closest` / `getBoundingClientRect` / `scrollTo` / `scrollIntoView`).
 
+## Demo
+
+![sent-msg-locator demo animation](assets/demo.gif)
+
+*Click a badge to smooth-scroll to that turn's user-typed message; the current-turn highlight follows scrolling and updates in real time.*
+
 ## Quick Start
 
 ```sh
@@ -58,6 +64,7 @@ Restart `dsh web` and the plugin activates automatically: the numbered rail appe
 | --- | --- |
 | `package.json` + `cordis.patch.yml` + `lib/` + `client/` | **Static bundle** (recommended): auto-loaded on DSH startup after `dsh plugin add` |
 | `manifest.json` + `client-source.js` | Dynamic-plugin fallback form: for profiles without bundle support |
+| `assets/demo.gif` | Demo animation shown on the README intro page (~11MB, compressed from the 94MB raw recording) |
 | `LICENSE` | MIT License |
 | `AGENTS.md` | Agent collaboration conventions (rebuild flow / change workflow / coding conventions / versioning) |
 | `README.md` / `README.en.md` | 中文 / English docs |

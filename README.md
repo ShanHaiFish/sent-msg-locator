@@ -26,6 +26,14 @@ DSH 插件：**定位当前会话中每一轮对话**（一轮 = 用户发送 �
 
 ---
 
+## 演示
+
+![sent-msg-locator 演示动画](assets/demo.gif)
+
+*点击图标平滑滚动定位到该轮用户输入文本,当前浏览轮高亮联动,随对话实时更新。*
+
+---
+
 ## 功能一览
 
 | 能力 | 说明 |
@@ -44,6 +52,7 @@ DSH 插件：**定位当前会话中每一轮对话**（一轮 = 用户发送 �
 | --- | --- | --- |
 | `package.json` + `cordis.patch.yml` + `lib/index.js` + `client/client.js` | **静态 bundle（推荐）** | `dsh plugin add` 安装后随 profile 层栈自动加载，跨 DSH 进程存续 |
 | `manifest.json` + `client-source.js` | 动态插件回退形态 | 仅用于无 bundle 能力的 profile，需在每次重启后重新 `cordis_define` / `cordis_run` |
+| `assets/demo.gif` | 演示动画 | README 介绍页的插件效果演示（约 11MB，压缩自 94MB 原始录屏） |
 
 ## 安装与使用
 
