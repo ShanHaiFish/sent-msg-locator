@@ -1,6 +1,6 @@
 {
   "schema": "dsh-dynamic-cordis-plugin",
-  "version": "2.3.4",
+  "version": "2.3.5",
   "plugin": {
     "kind": "new",
     "idPrefix": "smsg"
@@ -22,6 +22,7 @@
     "v2.2.0 安装形态切换：静态 bundle（package.json + cordis.patch.yml + lib/index.js + client/client.js）已通过 `dsh plugin --profile web add file:C:/Users/whaow/.dsh/plugins-dev/sent-msg-locator` 安装到 web profile（仓库先复制到 plugins-dev 以规避路径含空格），随 profile 层栈自动加载，跨 DSH 进程存续；重启 DSH 即生效。",
     "动态形态（本文件 + client-source.js）保留为回退形态：恢复/重建时用 cordis_define 以本文件的 plugin/name/purpose 与 client-source.js 内容重新定义（kind:new + idPrefix:smsg，code.client 为文件内容，code.host 为 null），再用 cordis_run 运行（首次需批准）。",
     "动态插件不跨 DSH 进程存续；重启 DSH 后若走动态形态需按 README.md 重新加载（静态 bundle 无需）。",
+    "v2.3.5 修复：轨迹视图下图标列未隐藏——会话视图环(conversation.view, chat/trajectory)由会话主体按激活视图一次渲染一个, 轨迹视图根元素带官方标记 data-conversation-composer-overlay(覆盖在 composer 之上, 数据桥所在 conversation.input.dock 仍在 DOM 中), 原插件只认 left 坐标, 切到轨迹页面后图标列继续悬浮显示; 修复为数据桥 measure 轮询(300ms)内以元素级 scoped 查询检测滚动容器 [data-conversation-scroll] 内是否存在该标记, 存在即写入 state.trajectory, 图标列与提示卡一并隐藏, 切回对话后自动恢复; 纯 Client 双形态同步, 安全审查 ALLOW(0/300)",
     "v2.3.4 修复：新工作区 goal 流程会话悬停无用户输入文本——用户输入经引擎渲染为 command 节点(斜杠命令, 如 /goal /compact, 数据为 {name,args}, 界面渲染为命令行)与 context 节点(source.kind==='goal' 的 goal 轮次消息, 引擎代用户发送的目标文本, 经 agent/inbox 认领后按 source.kind!=='user' 分类为 context), 原只认 user/steering 的过滤导致 turnTexts 无条目, 悬停显示误导性占位「该轮用户消息尚未加载」; 修复为用户输入候选同时接受 command 与 source.kind==='goal' 的 context(其余 context 注入仍排除), 命令文本为 '/name args'; 发生在 turn/start 之前的会话级命令(如会话首条即 /goal)节点 location 为 session 级, 记为 pendingCommand 归属其后出现的第一轮; 纯 Client 双形态同步, 安全审查 ALLOW(0/300)",
     "v2.3.3 修复：分页会话中最旧可见轮(图标列第一个图标, 序号不一定是 1)悬停无用户文本——引擎按 50 条消息分页(host 端 paginate 按消息分组切页, 切点永不拆消息但会切在轮次中间), 最旧可见轮常只有轮尾(助手消息已加载, turn/start 与用户消息在窗口外), 快照中不存在该轮 user/steering 节点, 文本无法从客户端取得; 修复为提示卡显示斜体占位「该轮用户消息尚未加载, 点击聊天区「加载更早」后显示」(label-tertiary 主题色), 用户加载更早历史后快照更新、文本自动出现; 精确区分「无条目(未加载)→ 占位」与「有条目但文本为空(罕见)→ 不显示」。",
     "v2.3.2 修复：首轮图标悬停无用户文本——会话首条消息（及进行中轮次的转向消息）经 agent/inbox/spliced(target: next-step) 被引擎认领，渲染为 kind==='steering' 而非 'user'（同渲染器 UserMessageNodeView、同 data-chat-anchor-key 锚点，界面看不出差异），插件原以 node.kind !== 'user' 过滤导致第 1 轮取不到文本与精确跳转键；修复为同时接受 'user' 与 'steering'（context 注入消息仍排除）。",

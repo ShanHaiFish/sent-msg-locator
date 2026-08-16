@@ -1,5 +1,5 @@
 // ============================================================
-// 已发送消息定位 (sent-msg-locator) — v2.3.4 (DSH 动态 Cordis 插件 · 回退形态)
+// 已发送消息定位 (sent-msg-locator) — v2.3.5 (DSH 动态 Cordis 插件 · 回退形态)
 // 本文件是 cordis_define 的 code.client 参数原文(函数体)。
 //
 // 功能: 定位当前会话中每一轮对话(用户发送 → 助手完整回复)。
@@ -135,6 +135,7 @@ return {
     let state = {
       sessionId: null,
       left: 0,            // 对话区左缘实测坐标(fixed 定位基准)
+      trajectory: false,  // 轨迹视图激活(图标列隐藏, v2.3.5)
       turns: [],          // [{ turn, startTime, endTime, status }]
       turnUserKeys: new Map(), // turn -> 该轮第一条用户消息节点 key
       turnTexts: new Map(), // turn -> 该轮第一条用户消息的文本(悬停提示卡)
@@ -323,6 +324,7 @@ return {
           setState({
             sessionId: sessionId || null,
             left: 0,
+            trajectory: false,
             turns: [],
             turnUserKeys: new Map(),
             turnTexts: new Map(),
@@ -514,6 +516,15 @@ return {
             const el = scroller || ref.current
             const rect = el.getBoundingClientRect()
             if (Math.abs(rect.left - state.left) > 0.5) setState({ left: rect.left })
+            // 轨迹视图检测(v2.3.5): 会话视图环(conversation.view, chat /
+            // trajectory)由会话主体按激活视图一次渲染一个, 轨迹视图根元素
+            // 带官方标记 data-conversation-composer-overlay(覆盖在 composer
+            // 之上, 数据桥所在 dock 仍在 DOM 中); 在滚动容器内存在该标记
+            // 即当前激活视图是轨迹 —— 图标列隐藏, 切回对话后自动恢复。
+            // 元素级 scoped 查询, 不触碰 document/window 全局。
+            const inTrajectory = !!(scroller &&
+              scroller.querySelector('[data-conversation-composer-overlay]'))
+            if (inTrajectory !== state.trajectory) setState({ trajectory: inTrajectory })
           }
         }
         measure()
@@ -580,6 +591,7 @@ return {
     // --- 左侧图标列 ---
     function TurnRail() {
       const left = useStore((s) => s.left)
+      const trajectory = useStore((s) => s.trajectory)
       const turns = useStore((s) => s.turns)
       const anchors = useStore((s) => s.anchors)
       const scrollEl = useStore((s) => s.scrollEl)
@@ -601,14 +613,14 @@ return {
         }
       }, [currentTurn])
 
-      // 会话切换(left 归零)时清空悬停提示
+      // 会话切换(left 归零)或轨迹视图激活时清空悬停提示
       React.useEffect(() => {
-        if (!left && tipTurn !== null) {
+        if ((!left || trajectory) && tipTurn !== null) {
           tipElRef.current = null
           setTipTurn(null)
           setTipPos(null)
         }
-      }, [left])
+      }, [left, trajectory])
 
       // 提示卡定位: 悬停按钮 rect 右侧固定定位(元素级 API, 不触碰全局);
       // 显示期间 timer 轮询校准(侧边栏拖拽/图标列内部滚动时提示卡跟随按钮),
@@ -641,6 +653,8 @@ return {
       }, [tipTurn, scrollEl])
 
       if (!left) return null
+      // 轨迹视图激活: 图标列与提示卡一并隐藏(v2.3.5)
+      if (trajectory) return null
 
       const items = turns.map((t) => {
         const isCurrent = currentTurn === t.turn

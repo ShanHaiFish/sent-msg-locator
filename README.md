@@ -102,6 +102,12 @@ DSH 重启后，仓库里的源码文件只是存档，必须重新注册进当�
   `getBoundingClientRect`）作为图标列 fixed 定位基准；侧边栏可折叠/拖拽
   改变宽度，桥内用 **timer 轮询（300ms）**持续校准，图标列始终贴在
   侧边栏右缘（对话区左缘）右侧；切换会话时清空旧数据。
+  同一轮询还会**检测轨迹视图**（v2.3.5）：会话视图环（`conversation.view`，
+  `chat` / `trajectory`）由会话主体按激活视图一次渲染一个，轨迹视图根元素
+  带官方标记 `data-conversation-composer-overlay`（覆盖在 composer 之上，
+  数据桥所在 dock 仍在 DOM 中）——在滚动容器 `[data-conversation-scroll]`
+  内存在该标记即当前激活视图是轨迹，图标列与提示卡一并隐藏，切回对话后
+  自动恢复。
   桥还会遍历 `chat.order`，为每个 turn 记录**第一条用户输入节点的 key 与
   文本**（用于精确跳转定位与悬停提示）：用户输入节点包括 `kind === 'user'` /
   `'steering'`（会话首条消息及进行中轮次的转向消息经 `agent/inbox/spliced`
@@ -150,6 +156,7 @@ DSH 重启后，仓库里的源码文件只是存档，必须重新注册进当�
 
 | 版本 | 日期 | 说明 |
 | --- | --- | --- |
+| v2.3.5 | 2026-08-16 | 修复：轨迹视图下图标列未隐藏——会话视图环（`conversation.view`，chat / trajectory）由会话主体按激活视图一次渲染一个，轨迹视图根元素带官方标记 `data-conversation-composer-overlay`（覆盖在 composer 之上，数据桥所在 dock 仍在 DOM 中），原插件只认 left 坐标、切到轨迹页面后图标列继续悬浮显示；修复为数据桥 measure 轮询（300ms）内以元素级 scoped 查询检测滚动容器 `[data-conversation-scroll]` 内是否存在该标记，存在即写入 `state.trajectory`，图标列与提示卡一并隐藏，切回对话后自动恢复；纯 Client 双形态同步，安全审查 ALLOW（0/300） |
 | v2.3.4 | 2026-08-16 | 修复：新工作区 goal 流程会话悬停无用户输入文本——用户输入经引擎渲染为 `command` 节点（斜杠命令，如 `/goal` `/compact`，界面渲染为命令行）与 `context` 节点（`source.kind === 'goal'` 的 goal 轮次消息，引擎代用户发送的目标文本，经 agent/inbox 认领后按 `source.kind !== 'user'` 分类为 context），原只认 `user`/`steering` 的过滤导致悬停显示误导性占位「该轮用户消息尚未加载」；修复为用户输入候选同时接受 `command`（文本为 `/name args`）与 `source.kind === 'goal'` 的 context（其余 context 注入仍排除）；发生在 `turn/start` 之前的会话级命令（如会话首条即 `/goal`）节点 location 为 session 级，记为 pendingCommand 归属其后出现的第一轮；纯 Client 双形态同步，安全审查 ALLOW（0/300） |
 | v2.3.3 | 2026-08-16 | 修复：分页会话中最旧可见轮（图标列第一个图标，序号不一定是 1）悬停无用户文本——引擎按 50 条消息分页（切点永不拆消息但会切在轮次中间），最旧可见轮常只有轮尾，其用户消息在已加载窗口外、快照中无该轮 user/steering 节点，文本无法从客户端取得；修复为提示卡显示斜体占位「该轮用户消息尚未加载，点击聊天区「加载更早」后显示」（`label-tertiary` 主题色），加载更早历史后文本自动出现；纯 Client 双形态同步，安全审查 ALLOW（0/300） |
 | v2.3.2 | 2026-08-16 | 修复：首轮图标悬停无用户文本——会话首条消息（及进行中轮次的转向消息）经 `agent/inbox/spliced`(target: next-step) 被引擎认领，渲染为 `kind === 'steering'` 而非 `'user'`（同一渲染器、同一锚点机制，界面看不出差异），原 `node.kind !== 'user'` 过滤导致第 1 轮取不到文本与精确跳转键；修复为同时接受 `'user'` 与 `'steering'`（context 注入消息仍排除）；纯 Client 双形态同步，安全审查 ALLOW（0/300） |
