@@ -35,10 +35,8 @@ return {
         position: fixed; width: 40px; z-index: 900;
         display: flex; flex-direction: column; gap: 6px;
         padding: 6px 0;
-        border-radius: 9px;
-        background: var(--dsw-alias-bg-layer-1, rgba(148,163,184,.08));
-        border: 1px solid var(--dsw-alias-border-l1, rgba(128,128,128,.28));
-        box-shadow: 2px 0 10px rgba(0,0,0,.08);
+        /* 竖条本体全透明: 调整窗口宽度时图标列可能与对话文字重叠,
+           去掉背景/边框/阴影后不遮挡文本; 只有气泡图标保留视觉。 */
         overflow-y: auto; overscroll-behavior: contain;
         pointer-events: auto;
       }

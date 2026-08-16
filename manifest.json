@@ -1,6 +1,6 @@
 {
   "schema": "dsh-dynamic-cordis-plugin",
-  "version": "2.1.6",
+  "version": "2.1.7",
   "plugin": {
     "kind": "new",
     "idPrefix": "smsg"
@@ -21,6 +21,7 @@
     "client 源码在 client-source.js，为 cordis_define 的 code.client 函数体原文；code.host 为 null（纯 Client 插件，无 Host RPC/能力）。",
     "恢复/重建时：用 cordis_define 以本文件的 plugin/name/purpose 与 client-source.js 内容重新定义（kind:new + idPrefix:smsg，code.client 为文件内容，code.host 为 null），再用 cordis_run 运行（首次需批准）。",
     "动态插件不跨 DSH 进程存续；重启 DSH 后需按 README.md 重新加载。",
+    "v2.1.7 优化：图标列竖条本体全透明——移除背景/边框/阴影/圆角，只保留气泡图标视觉；调整窗口宽度使图标列与对话文字重叠时，文字不再被竖条遮挡。",
     "v2.1.6 修复：图标列左缘坐标基准改为聊天滚动容器 [data-conversation-scroll]——空白会话 hero 阶段（点击工作区开始新会话、发送第一条消息前后）composer 输入区居中受限宽度（约 812px），原以 dock 行左缘测量会让图标列远离侧边栏并悬浮遮挡输入框；滚动容器横跨整个会话列，左缘在 hero/active/settling 各阶段恒等于对话区左缘。",
     "v2.1.5 修复：图标列恢复可见滚动条并加宽(28→40px)——此前滚动条被隐藏，轮次多时图标列自动跟随当前轮滚到底部，用户看不到较早轮次，误以为显示不全；现在可直观滚动浏览全部轮次。",
     "v2.1.4 修复：轮次显示不全 —— 会话历史分页(loadOlder)时官方 timeline 可能只含已加载窗口的轮次，改为 timeline 与聊天节点快照(chat.nodes)合并推导轮次，保证全部轮次图标正常显示。",
