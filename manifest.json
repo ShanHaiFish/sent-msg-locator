@@ -1,6 +1,6 @@
 {
   "schema": "dsh-dynamic-cordis-plugin",
-  "version": "2.1.0",
+  "version": "2.1.5",
   "plugin": {
     "kind": "new",
     "idPrefix": "smsg"
@@ -21,6 +21,11 @@
     "client 源码在 client-source.js，为 cordis_define 的 code.client 函数体原文；code.host 为 null（纯 Client 插件，无 Host RPC/能力）。",
     "恢复/重建时：用 cordis_define 以本文件的 plugin/name/purpose 与 client-source.js 内容重新定义（kind:new + idPrefix:smsg，code.client 为文件内容，code.host 为 null），再用 cordis_run 运行（首次需批准）。",
     "动态插件不跨 DSH 进程存续；重启 DSH 后需按 README.md 重新加载。",
+    "v2.1.5 修复：图标列恢复可见滚动条并加宽(28→40px)——此前滚动条被隐藏，轮次多时图标列自动跟随当前轮滚到底部，用户看不到较早轮次，误以为显示不全；现在可直观滚动浏览全部轮次。",
+    "v2.1.4 修复：轮次显示不全 —— 会话历史分页(loadOlder)时官方 timeline 可能只含已加载窗口的轮次，改为 timeline 与聊天节点快照(chat.nodes)合并推导轮次，保证全部轮次图标正常显示。",
+    "v2.1.3 修复：图标列与侧边栏右缘留出间距(left + 4 → +14)，避免贴边。",
+    "v2.1.2 修复：图标列垂直起点下移(top 56→96)，避免遮挡会话标题栏的「对话」视图标签。",
+    "v2.1.1 修复：图标列位置调整到侧边栏右缘(对话区左缘)右侧(left + 4)，不再左移 40px 悬浮在侧边栏边界上；桥内用 timer 轮询(300ms)持续校准左缘坐标，侧边栏折叠/拖拽调整宽度时图标列自动跟随。",
     "v2.1.0 优化：点击图标改为精确滚动定位到该轮第一条用户输入的文本消息（数据桥记录每轮首个 kind==='user' 节点的 key，跳转时按内置聊天视图锚点机制 data-chat-anchor-key 精确匹配用户消息行，元素级 querySelectorAll，不触碰 document/window 全局）；当前轮检测改为「视口顶部之下第一个锚点」逻辑，高亮更准确。",
     "v2.0.0 重构：从「右侧面板 + 搜索/展开/回填」改为「对话区左缘图标列 + 点击滚动定位」；一轮 = 用户发送 → 助手完整回复（官方 Turn）；点击图标平滑滚动到该轮开头（锚点位于轮尾，用上一轮锚点底部近似，误差为轮间距）；当前浏览轮高亮联动并自动跟随；图标列固定高度内部滚动、常驻无折叠开关。",
     "安全红线：不操作 document/window 全局（滚动定位只用元素级 closest/getBoundingClientRect/scrollTo/scrollIntoView），无网络/spawn/fs；安全审查 ALLOW。"

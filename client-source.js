@@ -28,10 +28,11 @@ return {
   apply(ctx) {
     const slots = ctx.get('slots')
     if (slots === undefined) return
+    const timer = ctx.get('timer')
 
     styles.insert(`
       .sml-rail {
-        position: fixed; width: 28px; z-index: 900;
+        position: fixed; width: 40px; z-index: 900;
         display: flex; flex-direction: column; gap: 6px;
         padding: 6px 0;
         border-radius: 9px;
@@ -40,9 +41,7 @@ return {
         box-shadow: 2px 0 10px rgba(0,0,0,.08);
         overflow-y: auto; overscroll-behavior: contain;
         pointer-events: auto;
-        scrollbar-width: none;
       }
-      .sml-rail::-webkit-scrollbar { display: none; }
       .sml-rail-hint {
         display: flex; align-items: center; justify-content: center;
         color: var(--dsw-alias-label-secondary, #9aa4b2);
@@ -244,39 +243,88 @@ return {
             currentTurn: null,
           })
         }
-        // 提取官方 timeline: turnOrder + turns, 并记录每轮第一条用户消息节点 key
+        // 提取轮次: 官方 timeline(turnOrder + turns)为主, 聊天节点快照兜底。
+        // 会话历史分页(loadOlder)时 timeline 可能只含已加载窗口的轮次,
+        // 而 chat.nodes 包含全部渲染节点 —— 两者合并保证轮次不缺失。
         const chat = snapshot && snapshot.chat
+        const nodes = chat && chat.nodes
+        const flowOrder = Array.isArray(chat.order) ? chat.order : []
         const timeline = chat && chat.timeline
-        const order = timeline && Array.isArray(timeline.turnOrder) ? timeline.turnOrder : null
-        const turnsMap = timeline && timeline.turns
+        const tOrder = timeline && Array.isArray(timeline.turnOrder) ? timeline.turnOrder : []
+        const tMap = timeline && timeline.turns
+
+        const turnOfNode = (node) => {
+          if (!node) return null
+          const loc = node.location
+          return loc && (loc.kind === 'turn' || loc.kind === 'step') && loc.turn
+            ? loc.turn.turn
+            : null
+        }
+
+        // 从节点推导的轮次信息(timeline 缺失时兜底)
+        const nodeTurns = new Map() // turn -> { startTime, endTime, status }
+        if (nodes && typeof nodes.get === 'function') {
+          for (const key of flowOrder) {
+            const node = nodes.get(key)
+            const turnNo = turnOfNode(node)
+            if (turnNo === null || nodeTurns.has(turnNo)) continue
+            const loc = node.location.turn
+            nodeTurns.set(turnNo, {
+              startTime: loc.start && typeof loc.start.time === 'number'
+                ? loc.start.time
+                : typeof node.time === 'number' ? node.time : 0,
+              endTime: loc.end && typeof loc.end.time === 'number' ? loc.end.time : 0,
+              status: loc.status,
+            })
+          }
+        }
+
+        // 合并顺序: timeline order 优先, 再按节点渲染顺序补全
+        const order = []
+        const seen = new Set()
+        for (const turnNo of tOrder) {
+          if (!seen.has(turnNo)) {
+            seen.add(turnNo)
+            order.push(turnNo)
+          }
+        }
+        if (nodes && typeof nodes.get === 'function') {
+          for (const key of flowOrder) {
+            const turnNo = turnOfNode(nodes.get(key))
+            if (turnNo !== null && !seen.has(turnNo)) {
+              seen.add(turnNo)
+              order.push(turnNo)
+            }
+          }
+        }
+
         const turns = []
         const turnUserKeys = new Map()
-        if (order && turnsMap && typeof turnsMap.get === 'function') {
+        if (order.length) {
           // 该轮第一条用户消息节点 key: 遍历 chat.order(渲染顺序),
           // 节点 location 属于该轮且 kind === 'user' 的第一个
-          const nodes = chat && chat.nodes
           const userKeyByTurn = new Map()
           if (nodes && typeof nodes.get === 'function') {
-            const flowOrder = Array.isArray(chat.order) ? chat.order : []
             for (const key of flowOrder) {
               const node = nodes.get(key)
               if (!node || node.kind !== 'user') continue
-              const loc = node.location
-              const turnNo = loc && (loc.kind === 'turn' || loc.kind === 'step') && loc.turn
-                ? loc.turn.turn
-                : null
+              const turnNo = turnOfNode(node)
               if (turnNo === null || userKeyByTurn.has(turnNo)) continue
               userKeyByTurn.set(turnNo, key)
             }
           }
           for (const turnNo of order) {
-            const loc = turnsMap.get(turnNo)
-            if (!loc) continue
+            const loc = tMap && typeof tMap.get === 'function' ? tMap.get(turnNo) : undefined
+            const nodeInfo = nodeTurns.get(turnNo)
             turns.push({
               turn: turnNo,
-              startTime: loc.start && typeof loc.start.time === 'number' ? loc.start.time : 0,
-              endTime: loc.end && typeof loc.end.time === 'number' ? loc.end.time : 0,
-              status: loc.status,
+              startTime: loc && loc.start && typeof loc.start.time === 'number'
+                ? loc.start.time
+                : nodeInfo ? nodeInfo.startTime : 0,
+              endTime: loc && loc.end && typeof loc.end.time === 'number'
+                ? loc.end.time
+                : nodeInfo ? nodeInfo.endTime : 0,
+              status: loc ? loc.status : nodeInfo ? nodeInfo.status : 'unknown',
             })
             const userKey = userKeyByTurn.get(turnNo)
             if (userKey) turnUserKeys.set(turnNo, userKey)
@@ -286,11 +334,20 @@ return {
       }, [snapshot, sessionId])
 
       React.useEffect(() => {
-        // 实测对话区左缘坐标(元素级 rect, 不触碰 document/window 全局)
-        if (ref.current) {
-          const rect = ref.current.getBoundingClientRect()
-          setState({ left: rect.left })
+        // 实测对话区左缘坐标(元素级 rect, 不触碰 document/window 全局)。
+        // 侧边栏可折叠/拖拽改变宽度, 用 timer 轮询持续校准, 保证图标列
+        // 始终贴在侧边栏右缘(对话区左缘)右侧。
+        const measure = () => {
+          if (ref.current) {
+            const rect = ref.current.getBoundingClientRect()
+            if (Math.abs(rect.left - state.left) > 0.5) setState({ left: rect.left })
+          }
         }
+        measure()
+        if (timer && typeof timer.interval === 'function') {
+          return timer.interval(measure, 300)
+        }
+        return undefined
       }, [snapshot])
 
       return React.createElement('div', { ref: ref, style: { width: 0, height: 0 } })
@@ -392,7 +449,7 @@ return {
       return React.createElement('div', {
         ref: railRef,
         className: 'sml-rail',
-        style: { left: left - 40, top: 56, bottom: 130 },
+        style: { left: left + 14, top: 96, bottom: 130 },
       },
         React.createElement('div', { className: 'sml-rail-hint' },
           React.createElement(IconChat, { size: 11 })),
