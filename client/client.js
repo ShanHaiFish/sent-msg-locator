@@ -1,5 +1,5 @@
 // ============================================================
-// 已发送消息定位 (sent-msg-locator) — v2.2.0 (DSH 静态 bundle 插件 · Client 半区)
+// 已发送消息定位 (sent-msg-locator) — v2.3.0 (DSH 静态 bundle 插件 · Client 半区)
 // 静态形态: 经 window.__ModuleLoader__.load 注册, 随 profile 层栈自动加载,
 // 无需每次重启 DSH 后重新 cordis_define/run。
 //
@@ -96,6 +96,36 @@ window.__ModuleLoader__.load({
           color: var(--dsw-alias-label-secondary, #9aa4b2);
           user-select: none; cursor: default;
         }
+        /* 悬停提示卡: 自定义 fixed 定位(原生 title 无法限制尺寸/加圆角),
+           显示在图标右侧, 圆角卡片 + 主题变量适配深浅色; 文本最长 6 行截断 */
+        .sml-tip {
+          position: fixed; z-index: 950;
+          max-width: 280px; box-sizing: border-box;
+          padding: 8px 10px;
+          border: 1px solid var(--dsw-alias-border-l2, rgba(120,130,145,.45));
+          border-radius: 10px;
+          background: var(--dsw-alias-bg-layer-3, #1d2027);
+          box-shadow: var(--dsw-shadow-lv1, 0 2px 4px rgba(0,0,0,.05));
+          color: var(--dsw-alias-label-primary, #e8e8e8);
+          font-size: 12px; line-height: 1.5;
+          pointer-events: none; user-select: none;
+          transform: translateY(-50%);
+          overflow: hidden;
+        }
+        .sml-tip-head {
+          color: var(--dsw-alias-label-secondary, #9aa4b2);
+          font-size: 11px; line-height: 1.4;
+          margin: 0 0 4px;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .sml-tip-text {
+          margin: 0;
+          color: var(--dsw-alias-label-primary, #e8e8e8);
+          white-space: pre-wrap; overflow-wrap: anywhere;
+          /* 超长文本: 最多 6 行省略号截断(line-clamp), max-height 兜底 */
+          max-height: 108px; overflow: hidden;
+          display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical;
+        }
       `)
 
       // --- 模块级轻量状态(useStore 模式, 与 fexp 一致) ---
@@ -105,6 +135,7 @@ window.__ModuleLoader__.load({
         left: 0,            // 对话区左缘实测坐标(fixed 定位基准)
         turns: [],          // [{ turn, startTime, endTime, status }]
         turnUserKeys: new Map(), // turn -> 该轮第一条用户消息节点 key
+        turnTexts: new Map(), // turn -> 该轮第一条用户消息的文本(悬停提示卡)
         anchors: new Map(), // turn -> 轮尾锚点元素
         scrollEl: null,     // 聊天滚动容器(首个锚点建立监听)
         currentTurn: null,  // 当前浏览轮
@@ -237,6 +268,26 @@ window.__ModuleLoader__.load({
         return String(n)
       }
 
+      // --- 用户消息文本提取(悬停提示卡) ---
+      // user 节点 data.content 为 ContentBlock[]: { type: 'text', text } 是
+      // 文本块, { type: 'image' } 是图片块; 只拼接文本块, 纯图片消息给占位。
+      // JS 侧 400 码点安全上限(正常截断由 CSS 6 行/280px 完成, 上限仅防
+      // 粘贴超大文本撑爆 DOM)。
+      function extractUserText(node) {
+        const data = node && node.data
+        const content = data && Array.isArray(data.content) ? data.content : []
+        let text = ''
+        let hasImage = false
+        for (const block of content) {
+          if (!block) continue
+          if (block.type === 'text' && typeof block.text === 'string') text += block.text
+          else if (block.type === 'image') hasImage = true
+        }
+        if (!text && hasImage) return '[图片]'
+        if (text.length > 400) return [...text].slice(0, 400).join('') + '…'
+        return text
+      }
+
       // --- 图标(Google Material Icons, Apache 2.0) ---
       function svgIcon(size, children) {
         return React.createElement('svg', {
@@ -272,6 +323,7 @@ window.__ModuleLoader__.load({
               left: 0,
               turns: [],
               turnUserKeys: new Map(),
+              turnTexts: new Map(),
               anchors: new Map(),
               scrollEl: null,
               currentTurn: null,
@@ -336,9 +388,10 @@ window.__ModuleLoader__.load({
           const turns = []
           const turnUserKeys = new Map()
           if (order.length) {
-            // 该轮第一条用户消息节点 key: 遍历 chat.order(渲染顺序),
+            // 该轮第一条用户消息节点 key 与文本: 遍历 chat.order(渲染顺序),
             // 节点 location 属于该轮且 kind === 'user' 的第一个
             const userKeyByTurn = new Map()
+            const userTextByTurn = new Map()
             if (nodes && typeof nodes.get === 'function') {
               for (const key of flowOrder) {
                 const node = nodes.get(key)
@@ -346,6 +399,7 @@ window.__ModuleLoader__.load({
                 const turnNo = turnOfNode(node)
                 if (turnNo === null || userKeyByTurn.has(turnNo)) continue
                 userKeyByTurn.set(turnNo, key)
+                userTextByTurn.set(turnNo, extractUserText(node))
               }
             }
             for (const turnNo of order) {
@@ -382,7 +436,7 @@ window.__ModuleLoader__.load({
             break
           }
         }
-        setState({ turns: turns, turnUserKeys: turnUserKeys, compaction: compaction })
+        setState({ turns: turns, turnUserKeys: turnUserKeys, turnTexts: userTextByTurn, compaction: compaction })
         }, [snapshot, sessionId])
 
         React.useEffect(() => {
@@ -470,9 +524,13 @@ window.__ModuleLoader__.load({
         const anchors = useStore((s) => s.anchors)
         const scrollEl = useStore((s) => s.scrollEl)
         const turnUserKeys = useStore((s) => s.turnUserKeys)
+        const turnTexts = useStore((s) => s.turnTexts)
         const currentTurn = useStore((s) => s.currentTurn)
         const compaction = useStore((s) => s.compaction)
         const railRef = React.useRef(null)
+        const tipElRef = React.useRef(null)
+        const [tipTurn, setTipTurn] = React.useState(null) // 正在悬停/聚焦的轮次
+        const [tipPos, setTipPos] = React.useState(null)   // 提示卡 fixed 坐标 { x, y }
 
         // 当前轮变化时, 图标列自动滚动使高亮图标可见
         React.useEffect(() => {
@@ -483,6 +541,45 @@ window.__ModuleLoader__.load({
           }
         }, [currentTurn])
 
+        // 会话切换(left 归零)时清空悬停提示
+        React.useEffect(() => {
+          if (!left && tipTurn !== null) {
+            tipElRef.current = null
+            setTipTurn(null)
+            setTipPos(null)
+          }
+        }, [left])
+
+        // 提示卡定位: 悬停按钮 rect 右侧固定定位(元素级 API, 不触碰全局);
+        // 显示期间 timer 轮询校准(侧边栏拖拽/图标列内部滚动时提示卡跟随按钮),
+        // 右缘/上下防溢出以聊天滚动容器 rect 为界
+        React.useEffect(() => {
+          if (tipTurn === null) return undefined
+          const compute = () => {
+            const el = tipElRef.current
+            if (!el || typeof el.getBoundingClientRect !== 'function') return
+            const rect = el.getBoundingClientRect()
+            let x = rect.right + 10
+            let y = rect.top + rect.height / 2
+            if (scrollEl && typeof scrollEl.getBoundingClientRect === 'function') {
+              const c = scrollEl.getBoundingClientRect()
+              const maxX = c.right - 280 - 8 // 卡宽 280px(border-box) + 右缘间距
+              if (x > maxX) x = maxX
+              if (x < c.left + 4) x = c.left + 4
+              if (y < c.top + 8) y = c.top + 8
+              if (y > c.bottom - 8) y = c.bottom - 8
+            }
+            setTipPos((prev) => prev && Math.abs(prev.x - x) < 0.5 && Math.abs(prev.y - y) < 0.5
+              ? prev
+              : { x: x, y: y })
+          }
+          compute()
+          if (timer && typeof timer.interval === 'function') {
+            return timer.interval(compute, 200)
+          }
+          return undefined
+        }, [tipTurn, scrollEl])
+
         if (!left) return null
 
         const items = turns.map((t) => {
@@ -491,17 +588,32 @@ window.__ModuleLoader__.load({
           const cls = ['sml-rail-item']
           if (isCurrent) cls.push('sml-rail-item-current')
           if (t.status === 'open') cls.push('sml-rail-item-open')
-          const title = '第 ' + t.turn + ' 轮' + (t.startTime ? ' · ' + fmtTime(t.startTime) : '') +
+          const label = '第 ' + t.turn + ' 轮' + (t.startTime ? ' · ' + fmtTime(t.startTime) : '') +
             (t.status === 'open' ? ' · 进行中' : '') +
             (clickable ? '' : ' · 暂不可定位')
+          // 自定义提示卡替代原生 title(原生无法限制尺寸/加圆角);
+          // 鼠标悬停与键盘聚焦(disabled 按钮不派发鼠标事件, 与现状一致)
+          const showTip = (e) => {
+            tipElRef.current = e.currentTarget
+            setTipTurn(t.turn)
+            setTipPos(null)
+          }
+          const hideTip = () => {
+            tipElRef.current = null
+            setTipTurn(null)
+            setTipPos(null)
+          }
           return React.createElement('button', {
             key: t.turn,
             type: 'button',
             className: cls.join(' '),
-            title: title,
             'data-sml-turn': String(t.turn),
-            'aria-label': title,
+            'aria-label': label,
             disabled: !clickable,
+            onMouseEnter: showTip,
+            onMouseLeave: hideTip,
+            onFocus: showTip,
+            onBlur: hideTip,
             onClick: () => jumpTo(t.turn, anchors, scrollEl, turnUserKeys),
           }, String(t.turn))
         })
@@ -512,19 +624,40 @@ window.__ModuleLoader__.load({
             (compaction.tokens !== null ? '，约 ' + fmtTokens(compaction.tokens) + ' tokens' : '')
           : ''
 
-        return React.createElement('div', {
-          ref: railRef,
-          className: 'sml-rail',
-          style: { left: left + 2, top: 96, bottom: 130 },
-        },
-          React.createElement('div', { className: 'sml-rail-hint' },
-            React.createElement(IconChat, { size: 8.8 })),
-          compaction ? React.createElement('div', {
-            className: 'sml-rail-compact',
-            title: compactTitle,
-            'aria-label': compactTitle,
-          }, React.createElement(IconCompress, { size: 8.8 })) : null,
-          turns.length ? items : React.createElement('div', { className: 'sml-rail-empty' }, '暂无'),
+        // 提示卡内容: 标题行(轮次/时间/状态) + 该轮第一条用户消息文本
+        const tipInfo = tipTurn !== null ? turns.find((t) => t.turn === tipTurn) : null
+        const tipLabel = tipInfo
+          ? '第 ' + tipInfo.turn + ' 轮' +
+            (tipInfo.startTime ? ' · ' + fmtTime(tipInfo.startTime) : '') +
+            (tipInfo.status === 'open' ? ' · 进行中' : '')
+          : ''
+        const tipText = tipTurn !== null && turnTexts ? turnTexts.get(tipTurn) || '' : ''
+
+        return React.createElement(React.Fragment, null,
+          React.createElement('div', {
+            ref: railRef,
+            className: 'sml-rail',
+            style: { left: left + 2, top: 96, bottom: 130 },
+          },
+            React.createElement('div', { className: 'sml-rail-hint' },
+              React.createElement(IconChat, { size: 8.8 })),
+            compaction ? React.createElement('div', {
+              className: 'sml-rail-compact',
+              title: compactTitle,
+              'aria-label': compactTitle,
+            }, React.createElement(IconCompress, { size: 8.8 })) : null,
+            turns.length ? items : React.createElement('div', { className: 'sml-rail-empty' }, '暂无'),
+          ),
+          // 提示卡必须与 .sml-rail 同级: rail 有 overflow-y: auto, 子元素会被裁剪
+          tipTurn !== null && tipPos
+            ? React.createElement('div', {
+              className: 'sml-tip',
+              style: { left: tipPos.x, top: tipPos.y },
+            },
+              React.createElement('div', { className: 'sml-tip-head' }, tipLabel),
+              tipText ? React.createElement('div', { className: 'sml-tip-text' }, tipText) : null,
+            )
+            : null,
         )
       }
 

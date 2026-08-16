@@ -19,7 +19,7 @@ A slim floating rail sits at the **left edge of the conversation area**: one **b
   - Click a badge → smooth-scroll to **the exact user-typed message of that turn** (matched via the built-in chat anchor mechanism `data-chat-anchor-key`, element-level API, never touches `document`/`window`)
   - Current-turn highlight follows scrolling; the rail auto-scrolls to keep the highlighted badge visible
   - In-progress turns show a dashed translucent badge until the reply completes
-  - Hover tooltip: "Turn N · time (· in progress / not locatable yet)"
+  - Hover tooltip: a rounded custom card — "Turn N · time (· in progress)" plus the first user-typed message of that turn (clamped to 280px × 6 lines with an ellipsis; image-only messages show "[image]"); also shown on keyboard focus
   - Internal scrollbar for long conversations; rail stays at the left edge of the conversation area (right of the sidebar) and follows sidebar collapse/drag via timer-calibrated coordinates
 - **Turn unit**: one official engine Turn (user send → assistant complete reply), including open/in-progress status
 - **Real-time updates**: the rail refreshes as the session snapshot changes; switching sessions clears stale data automatically
@@ -94,6 +94,7 @@ Dynamic fallback steps:
 - **Turn-tail anchors**: the additive `conversation.chat.assistant-actions` slot renders a 0-size anchor element at each completed assistant message, resolving its turn from the snapshot node's `data.turn`; the first anchor attaches a `scroll` listener on the chat scroll container (`closest('[data-conversation-scroll]')`) for current-turn detection.
 - **Precise jump**: click → match the snapshot node key against the built-in `data-chat-anchor-key` rows (element-level `querySelectorAll`), compute the row position, smooth-scroll; falls back to the tail-anchor position when the row is missing.
 - **Current-turn detection**: on scroll, the turn of the first anchor below the viewport top wins; the rail keeps the highlighted badge visible with `scrollIntoView({ block: 'nearest' })`.
+- **Hover tooltip card (v2.3.0)**: data comes from the first `kind === 'user'` node of the turn — `data.content` (`ContentBlock[]`, only `{ type: 'text' }` blocks are joined; image-only messages show "[image]" placeholder). A custom fixed-position rounded card replaces the native `title` (which cannot be sized or rounded; `aria-label` keeps the summary): ≤280px wide, text clamped to 6 lines (`-webkit-line-clamp` + `max-height` fallback, plus a 400-code-point JS safety cap); clamped against the chat scroll container's `getBoundingClientRect` to avoid right/top/bottom overflow; a 200ms timer poll re-measures while shown (follows sidebar drag / rail internal scroll); rendered as a sibling of the rail (the rail has `overflow-y: auto` and would clip children); triggered by mouse hover and keyboard focus; `pointer-events: none` so it never blocks the badges.
 - **Compaction marker (v2.1.12)**: after DSH auto-compaction the old turns disappear from the rail; a small compaction icon + dashed separator appears at the top (detected via `kind === 'compaction'` checkpoint nodes), tooltip "N history records compressed · ~M tokens".
 - All slots are additive (`conversation.input.dock` / `conversation.chat.assistant-actions` / `shell.overlay`); no built-in UI is replaced.
 
@@ -107,6 +108,7 @@ Dynamic fallback steps:
 
 | Version | Notes |
 | --- | --- |
+| v2.3.0 | Added hover tooltip cards: a custom fixed-position rounded card (replacing the native `title`, which cannot be sized or rounded) shows "Turn N · time (· in progress)" plus the first user-typed message text of that turn (from the first `kind === 'user'` node's `data.content` text blocks; image-only messages show "[image]"); long text clamps to 280px × 6 lines with an ellipsis (`-webkit-line-clamp` + `max-height` fallback, 400-code-point JS safety cap); clamped against the chat scroll container rect to avoid overflow; 200ms timer poll keeps it attached while shown; rendered as a sibling of the rail; keyboard focus also shows it; security review ALLOW (0/300) |
 | v2.2.0 | Switched to static bundle form: installed into the web profile via the `~/.dsh/plugins-dev/sent-msg-locator` copy (`file:` install, added to the `dsh.profile.bundles` layer stack), auto-loads across DSH restarts; dynamic form (`manifest.json` + `client-source.js`) kept as fallback; functionality identical to v2.1.12; security review ALLOW (0/300) |
 | v2.1.12 | Added compaction visual separator: after DSH auto-compaction old turns disappear from the rail and a compaction icon + dashed divider appears at the top (detected via `kind === 'compaction'` checkpoint nodes), tooltip "N history records compressed · ~M tokens" |
 | v2.1.11 | Shrunk badges to 80% (22→17.6px, font 10.5→8.4px); current-turn digit now uses `contrast-color()` for black/white by brand luminance (falls back to `#fff`), fixing invisible white digits on light brand themes |
