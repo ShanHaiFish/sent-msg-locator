@@ -1,5 +1,5 @@
 // ============================================================
-// 已发送消息定位 (sent-msg-locator) — v2.3.2 (DSH 动态 Cordis 插件 · 回退形态)
+// 已发送消息定位 (sent-msg-locator) — v2.3.3 (DSH 动态 Cordis 插件 · 回退形态)
 // 本文件是 cordis_define 的 code.client 参数原文(函数体)。
 //
 // 功能: 定位当前会话中每一轮对话(用户发送 → 助手完整回复)。
@@ -119,6 +119,14 @@ return {
         /* 超长文本: 最多 6 行省略号截断(line-clamp), max-height 兜底 */
         max-height: 108px; overflow: hidden;
         display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical;
+      }
+      /* 占位提示: 该轮用户消息不在已加载历史窗口内(会话按 50 条消息
+         分页, 最旧可见轮常只有轮尾), 提示用户加载更早历史后即显示 */
+      .sml-tip-missing {
+        margin: 0;
+        color: var(--dsw-alias-label-tertiary, #81858c);
+        font-style: italic;
+        white-space: normal; overflow-wrap: anywhere;
       }
     `)
 
@@ -635,14 +643,18 @@ return {
           (compaction.tokens !== null ? '，约 ' + fmtTokens(compaction.tokens) + ' tokens' : '')
         : ''
 
-      // 提示卡内容: 标题行(轮次/时间/状态) + 该轮第一条用户消息文本
+      // 提示卡内容: 标题行(轮次/时间/状态) + 该轮第一条用户消息文本;
+      // 该轮用户消息不在已加载窗口内(turnTexts 无该轮条目)时显示占位提示,
+      // 点击聊天区「加载更早」后快照更新、文本自动出现
       const tipInfo = tipTurn !== null ? turns.find((t) => t.turn === tipTurn) : null
       const tipLabel = tipInfo
         ? '第 ' + tipInfo.turn + ' 轮' +
           (tipInfo.startTime ? ' · ' + fmtTime(tipInfo.startTime) : '') +
           (tipInfo.status === 'open' ? ' · 进行中' : '')
         : ''
-      const tipText = tipTurn !== null && turnTexts ? turnTexts.get(tipTurn) || '' : ''
+      const tipText = tipTurn !== null && turnTexts ? turnTexts.get(tipTurn) : undefined
+      const tipHasText = typeof tipText === 'string' && tipText !== ''
+      const tipMissing = tipTurn !== null && turnTexts && !turnTexts.has(tipTurn)
 
       return React.createElement(React.Fragment, null,
         React.createElement('div', {
@@ -666,7 +678,12 @@ return {
             style: { left: tipPos.x, top: tipPos.y },
           },
             React.createElement('div', { className: 'sml-tip-head' }, tipLabel),
-            tipText ? React.createElement('div', { className: 'sml-tip-text' }, tipText) : null,
+            tipHasText
+              ? React.createElement('div', { className: 'sml-tip-text' }, tipText)
+              : tipMissing
+                ? React.createElement('div', { className: 'sml-tip-missing' },
+                    '该轮用户消息尚未加载,点击聊天区「加载更早」后显示')
+                : null,
           )
           : null,
       )

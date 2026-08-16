@@ -1,6 +1,6 @@
 {
   "schema": "dsh-dynamic-cordis-plugin",
-  "version": "2.3.2",
+  "version": "2.3.3",
   "plugin": {
     "kind": "new",
     "idPrefix": "smsg"
@@ -22,6 +22,7 @@
     "v2.2.0 安装形态切换：静态 bundle（package.json + cordis.patch.yml + lib/index.js + client/client.js）已通过 `dsh plugin --profile web add file:C:/Users/whaow/.dsh/plugins-dev/sent-msg-locator` 安装到 web profile（仓库先复制到 plugins-dev 以规避路径含空格），随 profile 层栈自动加载，跨 DSH 进程存续；重启 DSH 即生效。",
     "动态形态（本文件 + client-source.js）保留为回退形态：恢复/重建时用 cordis_define 以本文件的 plugin/name/purpose 与 client-source.js 内容重新定义（kind:new + idPrefix:smsg，code.client 为文件内容，code.host 为 null），再用 cordis_run 运行（首次需批准）。",
     "动态插件不跨 DSH 进程存续；重启 DSH 后若走动态形态需按 README.md 重新加载（静态 bundle 无需）。",
+    "v2.3.3 修复：分页会话中最旧可见轮(图标列第一个图标, 序号不一定是 1)悬停无用户文本——引擎按 50 条消息分页(host 端 paginate 按消息分组切页, 切点永不拆消息但会切在轮次中间), 最旧可见轮常只有轮尾(助手消息已加载, turn/start 与用户消息在窗口外), 快照中不存在该轮 user/steering 节点, 文本无法从客户端取得; 修复为提示卡显示斜体占位「该轮用户消息尚未加载, 点击聊天区「加载更早」后显示」(label-tertiary 主题色), 用户加载更早历史后快照更新、文本自动出现; 精确区分「无条目(未加载)→ 占位」与「有条目但文本为空(罕见)→ 不显示」。",
     "v2.3.2 修复：首轮图标悬停无用户文本——会话首条消息（及进行中轮次的转向消息）经 agent/inbox/spliced(target: next-step) 被引擎认领，渲染为 kind==='steering' 而非 'user'（同渲染器 UserMessageNodeView、同 data-chat-anchor-key 锚点，界面看不出差异），插件原以 node.kind !== 'user' 过滤导致第 1 轮取不到文本与精确跳转键；修复为同时接受 'user' 与 'steering'（context 注入消息仍排除）。",
     "v2.3.1 修复：v2.3.0 事故——数据桥在空白会话/快照加载中崩溃导致图标列整体消失。根因：userTextByTurn 声明在 if (order.length) 块内、却在块外 setState 引用，order 为空时 ReferenceError，被插槽系统（SlotCore）一次渲染错误永久弃权（abdicated），桥不再渲染、left 恒为 0、图标列不显示；修复为外层声明 + 推导整体 try/catch 防线（异常时跳过本次推导并 console.warn，绝不再让桥崩溃弃权）。",
     "v2.3.0 新增：图标悬停提示卡——自定义 fixed 定位圆角卡片（替代原生 title，原生无法限制尺寸/加圆角），悬停/键盘聚焦图标显示「第 N 轮 · 时间（· 进行中）」与该轮第一条用户消息的文本内容（数据来自该轮首个 kind==='user' 节点 data.content 的 text 块，ContentBlock[]，纯图片消息显示「[图片]」占位）；超长文本最长 6 行/280px 宽截断（-webkit-line-clamp + max-height 兜底，JS 侧 400 码点安全上限）；以聊天滚动容器 rect 为界防右缘/上下溢出，显示期间 timer 轮询（200ms）校准位置；提示卡与图标列同级渲染避免被 rail 滚动裁剪；纯 CSS + 叶子字段，无新能力。",
