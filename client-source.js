@@ -1,5 +1,5 @@
 // ============================================================
-// 已发送消息定位 (sent-msg-locator) — v2.3.0 (DSH 动态 Cordis 插件 · 回退形态)
+// 已发送消息定位 (sent-msg-locator) — v2.3.1 (DSH 动态 Cordis 插件 · 回退形态)
 // 本文件是 cordis_define 的 code.client 参数原文(函数体)。
 //
 // 功能: 定位当前会话中每一轮对话(用户发送 → 助手完整回复)。
@@ -324,10 +324,14 @@ return {
             compaction: null,
           })
         }
-        // 提取轮次: 官方 timeline(turnOrder + turns)为主, 聊天节点快照兜底。
-        // 会话历史分页(loadOlder)时 timeline 可能只含已加载窗口的轮次,
-        // 而 chat.nodes 包含全部渲染节点 —— 两者合并保证轮次不缺失。
-        const chat = snapshot && snapshot.chat
+        // 数据桥绝不能抛错: 插槽系统会把一次渲染错误永久弃权, 图标列
+        // 随之彻底消失(v2.3.0 教训)。快照在加载/流式/压缩各阶段形状
+        // 多变, 推导整体包 try/catch, 异常时跳过本次推导并告警。
+        try {
+          // 提取轮次: 官方 timeline(turnOrder + turns)为主, 聊天节点快照兜底。
+          // 会话历史分页(loadOlder)时 timeline 可能只含已加载窗口的轮次,
+          // 而 chat.nodes 包含全部渲染节点 —— 两者合并保证轮次不缺失。
+          const chat = snapshot && snapshot.chat
         const nodes = chat && chat.nodes
         const flowOrder = Array.isArray(chat.order) ? chat.order : []
         const timeline = chat && chat.timeline
@@ -381,11 +385,15 @@ return {
 
         const turns = []
         const turnUserKeys = new Map()
+        // 注意: userTextByTurn 必须在 if (order.length) 之外声明 ——
+        // setState 在块外引用它; 若在块内声明, 空会话(order 为空,
+        // 空白会话/快照加载中)时 ReferenceError 会导致数据桥被
+        // 插槽系统永久弃权, 图标列彻底消失(v2.3.0 事故根因)
+        const userTextByTurn = new Map()
         if (order.length) {
           // 该轮第一条用户消息节点 key 与文本: 遍历 chat.order(渲染顺序),
           // 节点 location 属于该轮且 kind === 'user' 的第一个
           const userKeyByTurn = new Map()
-          const userTextByTurn = new Map()
           if (nodes && typeof nodes.get === 'function') {
             for (const key of flowOrder) {
               const node = nodes.get(key)
@@ -431,6 +439,12 @@ return {
           }
         }
         setState({ turns: turns, turnUserKeys: turnUserKeys, turnTexts: userTextByTurn, compaction: compaction })
+        } catch (e) {
+          // 跳过本次推导: 宁可暂时无数据, 也不能让桥崩溃弃权
+          if (typeof console !== 'undefined' && console.warn) {
+            console.warn('[smsg] 会话快照推导异常, 已跳过:', e)
+          }
+        }
       }, [snapshot, sessionId])
 
       React.useEffect(() => {

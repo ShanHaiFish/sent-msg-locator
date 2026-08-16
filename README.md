@@ -136,6 +136,7 @@ DSH 重启后，仓库里的源码文件只是存档，必须重新注册进当�
 
 | 版本 | 日期 | 说明 |
 | --- | --- | --- |
+| v2.3.1 | 2026-xx-xx | 修复：v2.3.0 事故——数据桥在空白会话/快照加载中崩溃导致图标列整体消失。根因：`userTextByTurn` 声明在 `if (order.length)` 块内、却在块外 `setState` 引用，order 为空时 `ReferenceError`，被插槽系统一次渲染错误永久弃权（abdicated），桥不再渲染、`left` 恒为 0、图标列不显示；修复为外层声明 + 推导整体 `try/catch` 防线（异常时跳过本次推导并 `console.warn`，绝不再让桥崩溃弃权）；纯 Client 双形态同步，安全审查 ALLOW（0/300） |
 | v2.3.0 | 2026-xx-xx | 新增：图标悬停提示卡——自定义 fixed 定位圆角卡片（替代原生 title，原生无法限制尺寸/加圆角），悬停/键盘聚焦图标显示「第 N 轮 · 时间（· 进行中）」与该轮第一条用户消息的文本内容（数据来自该轮首个 `kind === 'user'` 节点 `data.content` 的 text 块，纯图片消息显示「[图片]」占位）；超长文本最长 6 行/280px 宽截断（`-webkit-line-clamp` + `max-height` 兜底，JS 侧 400 码点安全上限）；以聊天滚动容器 rect 为界防右缘/上下溢出，显示期间 timer 轮询（200ms）校准位置；提示卡与图标列同级渲染避免被 rail 滚动裁剪；纯 Client 双形态同步，安全审查 ALLOW（0/300） |
 | v2.2.0 | 2026-xx-xx | 安装形态切换：由动态插件正式切换为静态 bundle，已安装到 web profile（`~/.dsh/profiles/web`，经 `~/.dsh/plugins-dev/sent-msg-locator` 副本 `file:` 安装，加入 `dsh.profile.bundles` 层栈），随 profile 自动加载、跨 DSH 进程存续；动态形态（`manifest.json` + `client-source.js`）保留为回退；功能与 v2.1.12 完全一致，安全审查 ALLOW（0/300） |
 | v2.1.12 | 2026-xx-xx | 新增：压缩点视觉分隔标记——DSH 自动压缩对话（compaction，阈值默认上下文 80%）后旧轮次自动从图标列消失，图标列顶部显示压缩小图标 + 虚线分隔（检测 `chat.nodes` 中 `kind === 'compaction'` 检查点节点），悬停提示「已压缩 N 条历史记录 · 约 M tokens」 |
