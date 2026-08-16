@@ -1,5 +1,5 @@
 // ============================================================
-// 已发送消息定位 (sent-msg-locator) — v2.3.1 (DSH 动态 Cordis 插件 · 回退形态)
+// 已发送消息定位 (sent-msg-locator) — v2.3.2 (DSH 动态 Cordis 插件 · 回退形态)
 // 本文件是 cordis_define 的 code.client 参数原文(函数体)。
 //
 // 功能: 定位当前会话中每一轮对话(用户发送 → 助手完整回复)。
@@ -392,12 +392,15 @@ return {
         const userTextByTurn = new Map()
         if (order.length) {
           // 该轮第一条用户消息节点 key 与文本: 遍历 chat.order(渲染顺序),
-          // 节点 location 属于该轮且 kind === 'user' 的第一个
+          // 节点 location 属于该轮且 kind === 'user' / 'steering' 的第一个。
+          // steering 也是用户输入: 会话首条消息(及进行中轮次的转向消息)
+          // 经 agent/inbox/spliced(target: next-step)认领, 被渲染为
+          // kind === 'steering' 而非 'user'(v2.3.2 修复: 首轮图标无文本)
           const userKeyByTurn = new Map()
           if (nodes && typeof nodes.get === 'function') {
             for (const key of flowOrder) {
               const node = nodes.get(key)
-              if (!node || node.kind !== 'user') continue
+              if (!node || (node.kind !== 'user' && node.kind !== 'steering')) continue
               const turnNo = turnOfNode(node)
               if (turnNo === null || userKeyByTurn.has(turnNo)) continue
               userKeyByTurn.set(turnNo, key)

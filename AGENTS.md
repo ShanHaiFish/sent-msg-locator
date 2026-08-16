@@ -74,9 +74,10 @@ DSH 即可。
   `conversation.input.dock`、`shell.overlay`),绝不替换内置 UI;纯 JS +
   `React.createElement`,禁 JSX/TS/import;不操作 `document`/`window`,不使用
   `setTimeout` 等全局(需定时器时走 `timer` 服务)。
-- **数据来源**:会话快照 `useSession` → `snapshot.nodes` 过滤 `kind === 'user'`,
-  兜底 `chat.order` + `chat.nodes.get`;只提取需要的叶子字段(seq/time/text/hasImage),
-  不序列化快照对象本身。
+- **数据来源**:会话快照 `useSession` → `snapshot.nodes` 过滤 `kind === 'user'` /
+  `'steering'`(首条消息及转向消息经 next-step 收件箱被渲染为 steering,同属用户
+  输入;context 注入消息排除),兜底 `chat.order` + `chat.nodes.get`;只提取需要
+  的叶子字段(seq/time/text/hasImage),不序列化快照对象本身。
 - **会话作用域数据传递**:根作用域面板(overlay)拿不到 `useSession`,
   由 `conversation.input.dock` 隐藏桥(渲染 null)捕获并写入模块级状态;
   切换会话时必须清空旧数据。
