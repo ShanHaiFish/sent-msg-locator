@@ -5,6 +5,7 @@
 ![GitHub Release](https://img.shields.io/github/v/release/ShanHaiFish/sent-msg-locator)
 ![License](https://img.shields.io/github/license/ShanHaiFish/sent-msg-locator)
 ![GitHub Stars](https://img.shields.io/github/stars/ShanHaiFish/sent-msg-locator)
+[![npm](https://img.shields.io/npm/v/sent-msg-locator)](https://www.npmjs.com/package/sent-msg-locator)
 
 A DSH (DeepSeek Harness) plugin that **locates every turn of the current session** (a turn = your message sent → assistant's complete reply).
 

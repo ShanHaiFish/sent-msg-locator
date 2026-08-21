@@ -5,6 +5,7 @@
 ![GitHub Release](https://img.shields.io/github/v/release/ShanHaiFish/sent-msg-locator)
 ![License](https://img.shields.io/github/license/ShanHaiFish/sent-msg-locator)
 ![GitHub Stars](https://img.shields.io/github/stars/ShanHaiFish/sent-msg-locator)
+[![npm](https://img.shields.io/npm/v/sent-msg-locator)](https://www.npmjs.com/package/sent-msg-locator)
 
 DSH 插件：**定位当前会话中每一轮对话**（一轮 = 用户发送 → 助手完整回复）。
 
@@ -63,12 +64,12 @@ DSH 插件：**定位当前会话中每一轮对话**（一轮 = 用户发送 �
 ### 静态 bundle（推荐）
 
 ```sh
-# 本地目录安装（路径不能含空格；也可先发布到 npm）。
+# 从 npm 安装（v2.3.5 起已发布到 npm，推荐）
+dsh plugin --profile web add sent-msg-locator
+
+# 本地目录安装（路径不能含空格；用于未发布/本地调试副本）。
 # 本机已装：仓库先复制到 ~/.dsh/plugins-dev/sent-msg-locator（规避仓库路径含空格），
 # 再从该路径安装到 web profile，已写入 profile 的 dsh.profile.bundles 层栈。
-dsh plugin --profile web add file:C:/Users/whaow/.dsh/plugins-dev/sent-msg-locator
-
-# 升级（重新复制 plugins-dev 副本后）
 dsh plugin --profile web add file:C:/Users/whaow/.dsh/plugins-dev/sent-msg-locator
 ```
 
